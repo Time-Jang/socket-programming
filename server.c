@@ -9,7 +9,7 @@ static char *header_format = "HTTP/1.1 %s\r\n"	// 헤더파일의 포맷
 "Connection: %s\r\n"
 "Content-Type: %s\r\n"
 "\r\n";
-//에러 출력
+// 확장자 문자열의 길이를 리턴한다.
 int ext_len(char *sendfile)
 {
 	int i,file_len;
@@ -19,11 +19,13 @@ int ext_len(char *sendfile)
 		;
 	return (file_len - (i+1));
 }
+//정해진 헤더 포맷에 알맞게 헤더를 만들어준다.
 char *create_header(char *header,char *format)
 {
 	sprintf(header, header_format, "200 OK","close", format);
 	return header;
 }
+// 헤더에 포맷에 맞게 확장자 문자열을 구해 리턴한다. 
 char *process_format(char *ext)
 {
 	if (!strcmp(ext, "jpg"))
@@ -51,6 +53,7 @@ char *process_format(char *ext)
 	else
 		return "";
 }
+//클라이언트에게 보낼 헤더 문자열을 담을 문자열의 길이를 리턴한다.
 int get_header_len(char *ext,char *format)
 {
 	int header_len = strlen(header_format)-6;
@@ -58,6 +61,7 @@ int get_header_len(char *ext,char *format)
 	return header_len;
 }
 
+//에러 출력
 void error(char* msg)
 {
 	perror(msg);
@@ -168,23 +172,22 @@ int main(int argc, char *argv[])
 		// write
 		if(j>1)
 		{
-			filesize = file_size(sendfile);
-			extsize = ext_len(sendfile);
-			ext = (char *)malloc(sizeof(char) * extsize);
-//			printf("\n11111121312312312312321312321321312312321312\n");
+			filesize = file_size(sendfile); //보낼 파일의 크기 구하기
+			extsize = ext_len(sendfile);    //해당 파일의 확장자 문자열의 길이 구하기
+			ext = (char *)malloc(sizeof(char) * extsize); //확장자 문자열을 담을 배열 생성
 			for(i = 0; sendfile[i] != '.'; i++)
 				;
 			for(j = 0; j < extsize; j++)
-				ext[j] = sendfile[j + (i+1)];
-			format = process_format(ext); 
-			header_len = get_header_len(ext,format);
-			header = (char *)malloc(sizeof(char) * (header_len + 1));
-			create_header(header,format);
-			buffer2 = (char *)malloc(sizeof(char) * (header_len + filesize + 1));
-			strcpy(buffer2, header);
-			memcpy(buffer2 + header_len, check_file(sendfile), filesize);
+				ext[j] = sendfile[j + (i+1)];  //만든 배열에 확장자 문자열 담기
+			format = process_format(ext);  //헤더에 담기위해 파일의 확장자에 알맞는 문자열을 구하기
+			header_len = get_header_len(ext,format); //헤더의 길이 구하기
+			header = (char *)malloc(sizeof(char) * (header_len + 1));//헤더를 담을 배열 생성
+			create_header(header,format);  //정해진 규격에 맞게 헤더 문자열 생성
+			buffer2 = (char *)malloc(sizeof(char) * (header_len + filesize + 1)); //헤더+파일의 데이터를 담을 buffer2 생성
+			strcpy(buffer2, header); //buffer2에 헤더를 넣음
+			memcpy(buffer2 + header_len, check_file(sendfile), filesize); //buffer2에서 헤더가 담긴 부분 이후부터 파일의 데이터를 담음
 			free(header);
-			rw=write(newfd, buffer2, header_len + filesize);
+			rw=write(newfd, buffer2, header_len + filesize); //buffer2를 write함수를 통해 클라이언트에게 전송
 			// write가 안된 경우
 			if(rw<=0)
 				error("error in writing");
